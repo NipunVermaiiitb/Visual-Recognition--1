@@ -1,221 +1,228 @@
-# 👕 Multi-Object Apparel Detection and Instance Segmentation
-
-## 📌 Project Overview
-
-This project implements a complete visual recognition pipeline for **multi-object clothing analysis** using the DeepFashion2 dataset.
-
-The system performs three major tasks:
-
-1. **Multi-label Classification** – Predict all clothing categories present in an image.
-2. **Object Detection** – Predict bounding boxes and clothing category labels.
-3. **Instance Segmentation** – Generate pixel-level masks for each clothing item.
-
-This project was developed as part of the *Visual Recognition Mini Project*.
+# Visual Recognition Mini Project - Part 1  
+## Multi-Object Apparel Detection and Instance Segmentation
 
 ---
 
-## 🗂 Dataset
+## 👥 Team Members
 
-We use the **DeepFashion2 dataset**, which provides:
-
-- Person-centric clothing images
-- JSON annotations per image
-- Bounding boxes
-- Category labels (13 total categories)
-- Polygon segmentation masks
-- Landmark annotations
-
-### 🔹 Preprocessing
-
-- Selected **Top 5 most frequent categories**
-- Parsed JSON annotations
-- Converted polygon masks to binary masks
-- Generated:
-  - Multi-label targets for classification
-  - Bounding boxes + masks for detection/segmentation
-- Applied train/validation/test splits
-- Addressed class imbalance using augmentation
+- Saheem Showkat Reshi (IMT2023051)  
+- Ayush Mishra (IMT2023129)  
+- Harsh Sinha (IMT2023571)  
+- Nipun Verma (IMT2023591)
 
 ---
 
-## 🧠 Architectures Implemented
+## 🔗 Resources
 
-### 1️⃣ Multi-Label Classification
-
-- **Model:** ResNet-50 (Pretrained & From Scratch)
-- **Activation:** Sigmoid
-- **Loss:** Binary Cross Entropy (BCEWithLogitsLoss)
+- [GitHub Repository](https://github.com/NipunVermaiiitb/Visual-Recognition--1)  
+- [Hugging Face Model](https://huggingface.co/1LeoMessi0/VRMP1_IMT2023591_IMT2023571_IMT2023129_IMT2023051/tree/72adb68fcd5080503fe7b389b782fe8d7da41dc3)  
+- [Google Drive (All Models)](https://drive.google.com/drive/folders/1YyAEKo0mRQHuEjxIVeRvL_7YsI8FL-Nk?usp=sharing)
 
 ---
 
-### 2️⃣ Detection + Instance Segmentation
+## 📌 Introduction
 
-We trained and evaluated:
+With the growth of fashion e-commerce, automated systems for clothing understanding are increasingly important. This project focuses on building a robust visual recognition pipeline using the DeepFashion2 dataset.
 
-#### ✅ Mask R-CNN
-- Backbone: ResNet-50 + FPN
-- Region Proposal Network (RPN)
-- ROI Classification Head
-- Bounding Box Regression Head
-- Mask Head
+We address two main tasks:
 
-#### ✅ YOLO (Detection + Segmentation)
-- Multi-scale detection head
-- Prototype mask segmentation head
+- **Multi-label Classification:** Predict multiple clothing categories present in an image  
+- **Detection & Segmentation:** Localize objects and generate pixel-level masks  
 
----
-
-### 3️⃣ Semantic Segmentation
-
-#### ✅ U-Net
-- Encoder-Decoder architecture
-- Skip connections
-- Post-processing:
-  - Connected component analysis
-  - Bounding box extraction
-  - Majority voting for category assignment
+Challenges include:
+- Class imbalance  
+- Occlusion and overlap  
+- Limited compute  
 
 ---
 
-## ⚙️ Training Strategy
+## ⚙️ Implementation Notes
 
-Two training strategies were used:
+### Transfer Learning Strategy
 
-1. **Training from scratch**
-2. **Transfer learning**
-   - Pretrained weights
-   - Freeze early layers
-   - Fine-tune classification/detection heads
+- **Basic TL (Frozen Backbone):**
+  - Poor performance due to lack of domain adaptation
 
-All experiments were conducted on:
-- Google Colab / Kaggle
-- Models under compute constraints (< 7B parameters)
-
----
-
-## 📊 Evaluation Metrics
-
-### 🔹 Classification
-- Per-class Precision
-- Per-class Recall
-- Per-class F1-score
-- Macro F1
-- Micro F1
-- ROC Curves
-- AUC
-
-### 🔹 Segmentation
-- Mean Intersection over Union (mIoU)
-- Dice Coefficient
-
-### 🔹 Detection
-- COCO-style mAP@[0.5:0.95]
-- Per-class AP
-- F1-score
-- ROC and AUC
+- **TL + Fine-Tuning (Final Approach):**
+  - Partial unfreezing → gradual learning  
+  - Full fine-tuning → better adaptation  
+  - Lower LR in later stages  
+  - Multi-label setup using `BCEWithLogitsLoss`  
 
 ---
 
-## 📁 Repository Structure
+## 📊 Dataset Description & EDA
 
-```
-├── data_loader.py
-├── train_classifier.py
-├── train_maskrcnn.py
-├── train_yolo.py
-├── train_unet.py
-├── evaluation/
-│   ├── classification_metrics.py
-│   ├── detection_metrics.py
-│   ├── segmentation_metrics.py
-├── models/
-│   ├── resnet_classifier.py
-│   ├── maskrcnn_model.py
-│   ├── unet_model.py
-├── notebooks/
-├── results/
-├── README.md
-```
+### Dataset Statistics
 
----
+- Total Images: **191,961**
+- Total Objects: **312,186**
+- Avg Objects/Image: **1.63**
 
-## 🚀 How to Run
+### Class Distribution (Top 10)
 
-### 1️⃣ Install Dependencies
+| Category | Count |
+|----------|------|
+| Short Sleeve Top | 71,645 |
+| Trousers | 55,387 |
+| Shorts | 36,616 |
+| Long Sleeve Top | 36,064 |
+| Skirt | 30,835 |
+| Vest Dress | 17,949 |
+| Short Sleeve Dress | 17,211 |
+| Vest | 16,095 |
+| Long Sleeve Outwear | 13,457 |
+| Long Sleeve Dress | 7,907 |
 
-```bash
-pip install torch torchvision
-pip install pycocotools
-pip install scikit-learn
-pip install opencv-python
-```
+### Key Observations
+
+- Strong **class imbalance**
+- Most images contain **1–2 objects**
+- Minority classes are harder to learn
 
 ---
 
-### 2️⃣ Train Multi-label Classifier
+## 🧹 Data Preprocessing
 
-```bash
-python train_classifier.py
-```
+### Augmentations
 
----
+- Random Horizontal Flip  
+- Rotation (10–15°)  
+- Color Jitter  
+- Random Crop  
 
-### 3️⃣ Train Mask R-CNN
+### Final Pipeline
 
-```bash
-python train_maskrcnn.py
-```
+**Train:**
+- Resize → 256×256  
+- Random Crop → 224×224  
+- Flip  
+- Normalize  
 
----
-
-### 4️⃣ Train U-Net
-
-```bash
-python train_unet.py
-```
-
----
-
-## 📈 Results Summary
-
-| Model        | Task            | Metric Highlights |
-|-------------|----------------|-------------------|
-| ResNet-50   | Classification | Macro F1, AUC     |
-| Mask R-CNN  | Detection + Seg | mAP, mIoU         |
-| YOLO        | Detection + Seg | Fast inference    |
-| U-Net       | Segmentation   | Dice, mIoU        |
-
-*(Full results available in report PDF.)*
+**Validation:**
+- Resize → 256×256  
+- Center Crop → 224×224  
+- Normalize  
 
 ---
 
-## 🤖 Model Release
+## 🧪 Experimental Setup
 
-The best-performing models are uploaded to Hugging Face:
+### Hardware
 
-- Classification Model
-- Detection + Segmentation Model
-
-Inference scripts are provided for reproducibility.
+- Kaggle GPU (T4x2)
 
 ---
 
-## 📌 Key Observations
+### Classification Models
 
-- Transfer learning significantly improved convergence speed.
-- Mask R-CNN achieved higher segmentation accuracy than YOLO.
-- U-Net performed well for large clothing regions but struggled with small objects.
-- Class imbalance affected rare clothing categories.
+- ResNet-50  
+- EfficientNet-B0  
+- MobileNetV3  
+
+All use:
+- Multi-label setup  
+- BCEWithLogitsLoss  
 
 ---
 
-## 🧾 Final Report
+### Detection & Segmentation Models
 
-The final report includes:
-- Dataset preprocessing details
-- Experimental setup
-- Comparative analysis
-- Qualitative visualizations
-- Discussion and conclusionsse
+- YOLOv8 (segmentation)  
+- Mask R-CNN  
+- U-Net  
 
-For academic use only.
+---
+
+## 📈 Results
+
+### Classification (Overall)
+
+| Model | Training | Precision | Recall | Macro F1 | Micro F1 |
+|------|--------|----------|--------|----------|----------|
+| ResNet50 | Scratch | 0.7897 | 0.7317 | 0.7596 | 0.7389 |
+| ResNet50 | TL | 0.8679 | 0.8263 | 0.8465 | 0.8590 |
+| EfficientNet | TL | **0.8763** | 0.8516 | **0.8515** | 0.8638 |
+
+---
+
+### Detection
+
+| Model | Training | mAP | F1 |
+|------|--------|-----|----|
+| YOLO | Scratch | 0.532 | 0.547 |
+| YOLO | TL | **0.7012** | **0.8079** |
+| Mask R-CNN | TL | 0.011 | 0.6092 |
+
+---
+
+### Segmentation
+
+| Model | Training | mIoU | Dice |
+|------|--------|------|------|
+| YOLO | TL | **0.6583** | **0.7222** |
+| Mask R-CNN | TL | 0.4454 | 0.5687 |
+| U-Net | TL | 0.5257 | 0.5794 |
+
+---
+
+## 📊 Analysis
+
+### Classification
+
+- Transfer learning improves all models  
+- EfficientNet performs best  
+- MobileNet offers efficiency tradeoff  
+
+---
+
+### Detection
+
+- YOLO clearly outperforms Mask R-CNN  
+- Mask R-CNN suffers from poor localization  
+
+---
+
+### Segmentation
+
+- YOLO gives best overall performance  
+- U-Net improves with TL but lacks instance separation  
+- Mask R-CNN unstable  
+
+---
+
+## ⚠️ Failure Cases
+
+- Overlapping objects → merged masks  
+- Class confusion (short vs long sleeve)  
+- Poor minority class performance  
+- Small object detection issues  
+- Coarse segmentation boundaries  
+
+---
+
+## 📚 Key Learnings
+
+- Transfer learning is critical  
+- Fine-tuning improves stability  
+- Class imbalance significantly affects results  
+- Model complexity ≠ better performance  
+- YOLO best for detection + segmentation  
+
+---
+
+## ✅ Conclusion
+
+- EfficientNet best for classification  
+- YOLO best overall for detection & segmentation  
+- U-Net useful but limited  
+- Mask R-CNN underperformed due to training constraints  
+
+---
+
+## 🚀 Future Work
+
+- Handle class imbalance better  
+- Train Mask R-CNN longer  
+- Try advanced architectures  
+- Improve segmentation precision  
